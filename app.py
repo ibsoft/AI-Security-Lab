@@ -377,7 +377,7 @@ PRESETS = {
     "nvidia_nim": ("NVIDIA NIM", "openai_compatible", "https://integrate.api.nvidia.com/v1"),
     "lmstudio": ("LM Studio", "openai_compatible", "http://127.0.0.1:1234/v1"),
     "vllm": ("vLLM", "openai_compatible", "http://127.0.0.1:8000/v1"),
-    "custom": ("Custom OpenAI-compatible", "openai_compatible", "http://127.0.0.1:8000/v1"),
+    "custom": ("Custom", "custom", "http://127.0.0.1:8000"),
 }
 
 
@@ -403,6 +403,11 @@ def join_url(base, suffix):
 
 
 def discover_models(profile):
+    if profile.adapter == "custom":
+        models = json.loads(profile.models_json or "[]")
+        if profile.default_model:
+            models.append(profile.default_model)
+        return sorted(set(models))
     key = decrypt_secret(profile.api_key_enc)
     headers = extra_headers(profile)
     timeout = profile.timeout_seconds or 120
@@ -493,7 +498,10 @@ def provider_chat(profile, model, messages, system_prompt="", temperature=0.2, m
     headers.setdefault("content-type", "application/json")
     msgs = ([{"role": "system", "content": system_prompt}] if system_prompt else []) + messages
     payload = {"model": model, "messages": msgs, "temperature": float(temperature), "max_tokens": int(max_tokens)}
-    r = requests.post(join_url(profile.base_url, "/chat/completions"), json=payload, headers=headers, timeout=timeout, verify=verify)
+    if not model and (profile.adapter == "custom" or profile.preset == "custom"):
+        payload.pop("model")
+    endpoint = profile.base_url if profile.adapter == "custom" else join_url(profile.base_url, "/chat/completions")
+    r = requests.post(endpoint, json=payload, headers=headers, timeout=timeout, verify=verify)
     r.raise_for_status(); data = r.json(); choices = data.get("choices") or []; usage = data.get("usage") or {}
     text = ((choices[0].get("message") or {}).get("content") if choices else "") or ""
     finish = choices[0].get("finish_reason") if choices else None
@@ -1715,7 +1723,7 @@ def provider_edit(pid=None):
         except Exception: flash("Extra headers must be valid JSON.","danger"); return redirect(request.url)
         db.session.commit(); flash("Provider saved.","success"); return redirect(url_for("providers"))
     models="\n".join(json.loads(p.models_json or "[]")) if p else ""
-    body='''<div class="row justify-content-center"><div class="col-xl-9"><div class="eyebrow">PROVIDER CONFIGURATION</div><h1 class="h2 fw-bold mb-4">{{'Edit' if p else 'Add'}} provider</h1><form method="post" class="card panel"><input type="hidden" name="csrf_token" value="{{csrf_token()}}"><div class="card-body p-4"><div class="row g-3"><div class="col-md-6"><label class="form-label">Preset</label><select class="form-select" id="preset" name="preset">{% for k,v in presets.items() %}<option value="{{k}}" {{'selected' if p and p.preset==k else ''}}>{{v[0]}}</option>{% endfor %}</select></div><div class="col-md-6"><label class="form-label">Profile name</label><input class="form-control" name="name" value="{{p.name if p else ''}}" required></div><div class="col-md-4"><label class="form-label">Adapter</label><select class="form-select" id="adapter" name="adapter">{% for a in ['openai_compatible','anthropic','gemini','ollama'] %}<option {{'selected' if p and p.adapter==a else ''}}>{{a}}</option>{% endfor %}</select></div><div class="col-md-8"><label class="form-label">Base URL</label><input class="form-control font-monospace" id="base_url" name="base_url" value="{{p.base_url if p else ''}}" required></div><div class="col-md-6"><label class="form-label">API key</label><input class="form-control" type="password" name="api_key" autocomplete="new-password" placeholder="{{'Leave blank to keep existing key' if p else 'Optional for local runtimes'}}"></div><div class="col-md-3"><label class="form-label">Timeout</label><input class="form-control" type="number" name="timeout_seconds" value="{{p.timeout_seconds if p else 120}}"></div><div class="col-md-3 d-flex align-items-end"><div class="form-check form-switch mb-2"><input class="form-check-input" type="checkbox" name="verify_tls" {{'checked' if not p or p.verify_tls else ''}}><label class="form-check-label">Verify TLS</label></div></div><div class="col-md-6"><label class="form-label">Default model</label><input class="form-control" name="default_model" value="{{p.default_model if p else ''}}"></div><div class="col-md-6"><label class="form-label">Known models</label><textarea class="form-control" name="models_text" rows="5">{{models}}</textarea></div><div class="col-12"><label class="form-label">Extra headers JSON</label><textarea class="form-control font-monospace" name="extra_headers" rows="4">{{p.extra_headers_json if p else '{}'}}</textarea></div></div></div><div class="card-footer d-flex justify-content-between"><a class="btn btn-outline-light" href="{{url_for('providers')}}">Back</a><button class="btn btn-primary">Save</button></div></form></div></div>'''
+    body='''<div class="row justify-content-center"><div class="col-xl-9"><div class="eyebrow">PROVIDER CONFIGURATION</div><h1 class="h2 fw-bold mb-4">{{'Edit' if p else 'Add'}} provider</h1><form method="post" class="card panel"><input type="hidden" name="csrf_token" value="{{csrf_token()}}"><div class="card-body p-4"><div class="row g-3"><div class="col-md-6"><label class="form-label">Preset</label><select class="form-select" id="preset" name="preset">{% for k,v in presets.items() %}<option value="{{k}}" {{'selected' if p and p.preset==k else ''}}>{{v[0]}}</option>{% endfor %}</select></div><div class="col-md-6"><label class="form-label">Profile name</label><input class="form-control" name="name" value="{{p.name if p else ''}}" required></div><div class="col-md-4"><label class="form-label">Adapter</label><select class="form-select" id="adapter" name="adapter">{% for a in ['openai_compatible','anthropic','gemini','ollama','custom'] %}<option {{'selected' if p and p.adapter==a else ''}}>{{a}}</option>{% endfor %}</select></div><div class="col-md-8"><label class="form-label">Base URL</label><input class="form-control font-monospace" id="base_url" name="base_url" value="{{p.base_url if p else ''}}" required><div class="form-text">For the custom adapter, enter the full request URL. Requests go directly to this URL using OpenAI-compatible JSON.</div></div><div class="col-md-6"><label class="form-label">API key</label><input class="form-control" type="password" name="api_key" autocomplete="new-password" placeholder="{{'Leave blank to keep existing key' if p else 'Optional for local runtimes'}}"></div><div class="col-md-3"><label class="form-label">Timeout</label><input class="form-control" type="number" name="timeout_seconds" value="{{p.timeout_seconds if p else 120}}"></div><div class="col-md-3 d-flex align-items-end"><div class="form-check form-switch mb-2"><input class="form-check-input" type="checkbox" name="verify_tls" {{'checked' if not p or p.verify_tls else ''}}><label class="form-check-label">Verify TLS</label></div></div><div class="col-md-6"><label class="form-label" for="default_model">Default model (optional)</label><input class="form-control" id="default_model" name="default_model" value="{{(p.default_model or '') if p else ''}}" aria-describedby="defaultModelHelp"><div id="defaultModelHelp" class="form-text">You can save a custom provider without a model name. Discover or add models later.</div></div><div class="col-md-6"><label class="form-label" for="models_text">Known models (optional)</label><textarea class="form-control" id="models_text" name="models_text" rows="5">{{models}}</textarea></div><div class="col-12"><label class="form-label">Extra headers JSON</label><textarea class="form-control font-monospace" name="extra_headers" rows="4">{{p.extra_headers_json if p else '{}'}}</textarea></div></div></div><div class="card-footer d-flex justify-content-between"><a class="btn btn-outline-light" href="{{url_for('providers')}}">Back</a><button class="btn btn-primary">Save</button></div></form></div></div>'''
     preset_js=json.dumps({k:{"adapter":v[1],"url":v[2]} for k,v in PRESETS.items()}); scripts=f'''<script>const P={preset_js};let s=document.getElementById('preset');s.onchange=()=>{{document.getElementById('adapter').value=P[s.value].adapter;document.getElementById('base_url').value=P[s.value].url}};{'s.dispatchEvent(new Event(\'change\'));' if not p else ''}</script>'''
     return page("Provider configuration",body,scripts,p=p,presets=PRESETS,models=models)
 
@@ -1893,6 +1901,10 @@ def agent():
         providers=providers,
         ollama_providers=ollama_providers,
         prompt_guard_model=prompt_guard_config.model_id,
+        prompt_guard_models=PROMPT_GUARD_MODELS,
+        prompt_guard_installed_models={
+            model_id: prompt_guard_installed(model_id) for model_id in PROMPT_GUARD_MODELS
+        },
         prompt_guard_enabled=prompt_guard_installed(prompt_guard_config.model_id),
         llama_guard_enabled=bool(ollama_providers),
     )
@@ -1911,7 +1923,12 @@ def agent_chat():
     judge_profile = db.session.get(ProviderProfile, int(data.get("judge_provider_id") or 0))
     target_model = str(data.get("model") or (target_profile.default_model if target_profile else "") or "")
     judge_model = str(data.get("judge_model") or (judge_profile.default_model if judge_profile else "") or "")
-    if not target_profile or not target_model:
+    target_model_optional = bool(
+        target_profile and (target_profile.adapter == "custom" or (
+            target_profile.preset == "custom" and target_profile.adapter == "openai_compatible"
+        ))
+    )
+    if not target_profile or (not target_model and not target_model_optional):
         return jsonify(ok=False, error="Select a target provider and model."), 400
     if not judge_profile or not judge_model:
         return jsonify(ok=False, error="Select a Judge provider and model."), 400

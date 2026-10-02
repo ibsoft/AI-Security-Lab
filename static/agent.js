@@ -6,8 +6,17 @@ const conversationBox = document.getElementById('chat');
 const sendButton = document.getElementById('send');
 let messages = [];
 
+function targetModelOptional() {
+  return targetProvider.selectedOptions[0]?.dataset.modelOptional === 'true';
+}
+
 async function loadProviderModels(providerId, select, preferred = '') {
   select.replaceChildren();
+  const optional = select === targetModel && targetModelOptional();
+  if (select === targetModel) {
+    document.getElementById('targetModelLabel').textContent = optional ? 'Target model (optional)' : 'Target model';
+  }
+  if (optional) select.append(new Option('Use provider default', ''));
   if (!providerId) return;
   const response = await fetch(`/api/provider/${providerId}/models`);
   const models = await response.json();
@@ -19,6 +28,7 @@ async function loadProviderModels(providerId, select, preferred = '') {
     option.selected = modelName === preferred;
     select.append(option);
   }
+  if (optional && !preferred) select.value = '';
 }
 
 function appendMessage(role, text, report) {
@@ -87,7 +97,7 @@ document.getElementById('clear').addEventListener('click', () => {
 sendButton.addEventListener('click', async () => {
   const input = document.getElementById('msg');
   const text = input.value.trim();
-  if (!text || !targetModel.value || !judgeModel.value) return;
+  if (!text || !targetProvider.value || (!targetModel.value && !targetModelOptional()) || !judgeModel.value) return;
   messages.push({ role: 'user', content: text });
   appendMessage('user', text);
   input.value = '';
@@ -106,6 +116,7 @@ sendButton.addEventListener('click', async () => {
         temperature: document.getElementById('temp').value,
         max_tokens: document.getElementById('max').value,
         use_prompt_guard: document.getElementById('enablePromptGuard').checked,
+        prompt_guard_model: document.getElementById('promptGuardModel').value,
         use_llama_guard: document.getElementById('enableLlamaGuard').checked,
         llama_guard_provider_profile_id: document.getElementById('llamaProvider').value,
         llama_guard_model: document.getElementById('llamaModel').value,

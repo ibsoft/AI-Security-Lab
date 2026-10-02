@@ -68,3 +68,40 @@ document.addEventListener('submit', (event) => {
     confirmClass: form.getAttribute('data-confirm-class') || 'btn-danger',
   });
 });
+
+const pageLoadingOverlay = document.getElementById('pageLoading');
+const showPageLoading = () => {
+  if (pageLoadingOverlay) pageLoadingOverlay.hidden = false;
+};
+const hidePageLoading = () => {
+  if (pageLoadingOverlay) pageLoadingOverlay.hidden = true;
+};
+
+if (document.readyState === 'complete') {
+  hidePageLoading();
+} else {
+  window.addEventListener('load', hidePageLoading, { once: true });
+}
+window.addEventListener('pageshow', hidePageLoading);
+
+document.addEventListener('click', (event) => {
+  if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+  const link = event.target.closest('a[href]');
+  if (!link || link.hasAttribute('download')) return;
+  const target = (link.getAttribute('target') || '').toLowerCase();
+  if (target && target !== '_self') return;
+
+  const destination = new URL(link.href, window.location.href);
+  if (destination.origin !== window.location.origin) return;
+  if (destination.pathname === window.location.pathname && destination.search === window.location.search) return;
+  showPageLoading();
+});
+
+document.addEventListener('submit', (event) => {
+  if (event.defaultPrevented) return;
+  const form = event.target;
+  if (!(form instanceof HTMLFormElement)) return;
+  const target = (form.getAttribute('target') || '').toLowerCase();
+  if (target && target !== '_self') return;
+  showPageLoading();
+});

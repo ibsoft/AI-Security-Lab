@@ -10,6 +10,10 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
+  <div id="pageLoading" class="page-loading" role="status" aria-live="polite">
+    <div class="spinner-border text-info" aria-hidden="true"></div>
+    <span class="visually-hidden">Loading page...</span>
+  </div>
   {% if current_user.is_authenticated %}
   <nav class="navbar navbar-expand-lg border-bottom border-secondary-subtle sticky-top glass">
     <div class="container-fluid px-4">
