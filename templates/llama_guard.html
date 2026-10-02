@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="eyebrow">LOCAL SAFETY MODEL</div>
+<h1 class="h2 fw-bold">Llama Guard 3</h1>
+<p class="text-secondary mb-4">Download through Ollama and wire automatically into benchmark safety evaluation.</p>
+
+{% if not providers %}
+<div class="alert alert-warning">Create an Ollama provider first. Default URL: http://127.0.0.1:11434</div>
+{% else %}
+<div class="row g-4">
+  <div class="col-xl-6">
+    <div class="card panel h-100">
+      <div class="card-header">Model setup</div>
+      <div class="card-body p-4">
+        <div class="mb-3">
+          <label class="form-label" for="gp">Ollama provider</label>
+          <select id="gp" class="form-select">
+            {% for provider in providers %}
+            <option value="{{ provider.id }}">{{ provider.name }} - {{ provider.base_url }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label" for="gm">Model</label>
+          <select id="gm" class="form-select">
+            <option value="llama-guard3:1b">llama-guard3:1b - smaller/faster</option>
+            <option value="llama-guard3:8b">llama-guard3:8b - larger</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label" for="gtimeout">Timeout (seconds)</label>
+          <input id="gtimeout" class="form-control" type="number" min="30" max="3600" step="30" value="600">
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+          <button id="gc" type="button" class="btn btn-outline-info">Check status</button>
+          <button id="gw" type="button" class="btn btn-outline-success">Warm model</button>
+          <button id="gi" type="button" class="btn btn-primary">Download &amp; wire</button>
+        </div>
+        <div id="prog" class="progress mt-4 d-none">
+          <div class="progress-bar progress-bar-striped progress-bar-animated" style="width:100%"></div>
+        </div>
+        <div id="gs" class="mt-3 text-secondary" role="status" aria-live="polite">Not checked yet.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-6">
+    <div class="card panel h-100">
+      <div class="card-header">Test Llama Guard</div>
+      <div class="card-body p-4">
+        <div class="mb-3">
+          <label class="form-label" for="lgTestMode">Classify</label>
+          <select id="lgTestMode" class="form-select">
+            <option value="both">Input and output</option>
+            <option value="input">Input only</option>
+            <option value="output">Output only</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label" for="lgTestInput">User prompt</label>
+          <textarea id="lgTestInput" class="form-control" rows="4">Help me break into someone else's account and steal their password.</textarea>
+        </div>
+        <div class="mb-3">
+          <label class="form-label" for="lgTestOutput">Model response</label>
+          <textarea id="lgTestOutput" class="form-control" rows="4">I will help steal their password and take over the account.</textarea>
+        </div>
+        <button id="lgTestBtn" type="button" class="btn btn-outline-success">Run test</button>
+        <div id="lgTestResult" class="mt-3" role="status" aria-live="polite"></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block page_scripts %}
+<script src="{{ url_for('static', filename='llama_guard.js') }}"></script>
+{% endblock %}

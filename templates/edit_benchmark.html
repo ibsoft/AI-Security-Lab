@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="eyebrow">BENCHMARK CONFIGURATION</div>
+<h1 class="h2 fw-bold">Edit settings &amp; rerun</h1>
+<p class="text-secondary mb-4">This creates a new run from run #{{ run.id }}. Existing results and settings remain unchanged.</p>
+
+<form method="post" action="{{ url_for('run_edit', run_id=run.id) }}" class="card panel">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="card-body p-4">
+    <label class="form-label" for="runName">Run name</label>
+    <input id="runName" class="form-control mb-4" name="name" value="{{ suggested_name }}" required>
+
+    <h2 class="h6">Target model</h2>
+    <div class="row g-3 mb-4">
+      <div class="col-md-6">
+        <label class="form-label" for="targetProvider">Provider</label>
+        <select id="targetProvider" name="provider_profile_id" class="form-select" required>
+          {% for provider in providers %}
+          <option value="{{ provider.id }}" {{ 'selected' if provider.id == run.provider_profile_id else '' }}>{{ provider.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label" for="targetModel">Model</label>
+        <input id="targetModel" class="form-control" name="model" value="{{ run.model }}" required>
+      </div>
+      <div class="col-12">
+        <label class="form-label" for="systemPrompt">System prompt</label>
+        <textarea id="systemPrompt" class="form-control" name="system_prompt" rows="4">{{ run.system_prompt }}</textarea>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label" for="temperature">Temperature</label>
+        <input id="temperature" class="form-control" name="temperature" type="number" min="0" max="2" step="0.1" value="{{ run.temperature }}">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label" for="maxTokens">Max tokens</label>
+        <input id="maxTokens" class="form-control" name="max_tokens" type="number" min="64" max="32768" value="{{ run.max_tokens }}">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label" for="concurrency">Concurrency</label>
+        <input id="concurrency" class="form-control" name="concurrency" type="number" min="1" max="16" value="{{ run.concurrency }}">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label" for="passThreshold">Pass threshold</label>
+        <input id="passThreshold" class="form-control" name="pass_threshold" type="number" min="0" max="100" step="1" value="{{ run.pass_threshold }}">
+      </div>
+    </div>
+
+    <h2 class="h6">Dataset selection</h2>
+    <div class="row g-3 mb-4">
+      <div class="col-md-3">
+        <label class="form-label" for="startIndex">Start offset</label>
+        <input id="startIndex" class="form-control" name="start_index" type="number" min="0" value="{{ run.start_index }}">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label" for="requestedCount">Number of tests</label>
+        <input id="requestedCount" class="form-control" name="requested_count" type="number" min="0" value="{{ run.requested_count }}">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label" for="categoryFilter">Category</label>
+        <select id="categoryFilter" name="category_filter" class="form-select">
+          <option value="">All categories</option>
+          {% for category in categories %}
+          <option value="{{ category }}" {{ 'selected' if category == run.category_filter else '' }}>{{ category }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label" for="severityFilter">Severity</label>
+        <select id="severityFilter" name="severity_filter" class="form-select">
+          <option value="">All severities</option>
+          {% for severity in severities %}
+          <option value="{{ severity }}" {{ 'selected' if severity == run.severity_filter else '' }}>{{ severity }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="maliciousFilter">Threat/control type</label>
+        <select id="maliciousFilter" name="malicious_filter" class="form-select">
+          <option value="">All types</option>
+          <option value="malicious" {{ 'selected' if run.malicious_filter == 'malicious' else '' }}>Malicious only</option>
+          <option value="benign" {{ 'selected' if run.malicious_filter == 'benign' else '' }}>Benign controls only</option>
+        </select>
+      </div>
+    </div>
+
+    <h2 class="h6">Evaluators</h2>
+    <div class="row g-3 mb-4">
+      <div class="col-12">
+        <div class="form-check form-switch">
+          <input id="useJudge" class="form-check-input" name="use_ai_judge" type="checkbox" value="1" {{ 'checked' if run.use_ai_judge else '' }}>
+          <label class="form-check-label" for="useJudge">Use AI Judge for scoring</label>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label" for="judgeProvider">Judge provider</label>
+        <select id="judgeProvider" name="judge_provider_profile_id" class="form-select">
+          <option value="">No AI Judge</option>
+          {% for provider in providers %}
+          <option value="{{ provider.id }}" {{ 'selected' if provider.id == run.judge_provider_profile_id else '' }}>{{ provider.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label" for="judgeModel">Judge model</label>
+        <input id="judgeModel" class="form-control" name="judge_model" value="{{ run.judge_model or '' }}">
+      </div>
+
+      <div class="col-12"><hr></div>
+      <div class="col-12">
+        <div class="form-check form-switch">
+          <input id="usePromptGuard" class="form-check-input" name="use_prompt_guard" type="checkbox" value="1" {{ 'checked' if run.use_prompt_guard else '' }}>
+          <label class="form-check-label" for="usePromptGuard">Use Prompt Guard 2</label>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label" for="promptGuardModel">Prompt Guard model</label>
+        <select id="promptGuardModel" name="prompt_guard_model" class="form-select">
+          {% for model_id, label in prompt_guard_models.items() %}
+          <option value="{{ model_id }}" {{ 'selected' if model_id == run.prompt_guard_model else '' }}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label" for="promptGuardThreshold">Malicious threshold</label>
+        <input id="promptGuardThreshold" class="form-control" name="prompt_guard_threshold" type="number" min="0" max="1" step="0.01" value="{{ run.prompt_guard_threshold }}">
+      </div>
+
+      <div class="col-12"><hr></div>
+      <div class="col-12">
+        <div class="form-check form-switch">
+          <input id="useLlamaGuard" class="form-check-input" name="use_llama_guard" type="checkbox" value="1" {{ 'checked' if run.use_llama_guard else '' }}>
+          <label class="form-check-label" for="useLlamaGuard">Use Llama Guard 3</label>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label" for="llamaProvider">Ollama provider</label>
+        <select id="llamaProvider" name="llama_guard_provider_profile_id" class="form-select">
+          <option value="">Select Ollama provider...</option>
+          {% for provider in ollama_providers %}
+          <option value="{{ provider.id }}" {{ 'selected' if provider.id == run.llama_guard_provider_profile_id else '' }}>{{ provider.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label" for="llamaModel">Llama Guard model</label>
+        <select id="llamaModel" name="llama_guard_model" class="form-select">
+          {% for model in ['llama-guard3:1b', 'llama-guard3:8b'] %}
+          <option value="{{ model }}" {{ 'selected' if model == run.llama_guard_model else '' }}>{{ model }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label" for="llamaMode">Llama Guard mode</label>
+        <select id="llamaMode" name="llama_guard_mode" class="form-select">
+          {% for mode, label in [('both', 'Input + output'), ('input', 'Input only'), ('output', 'Output only')] %}
+          <option value="{{ mode }}" {{ 'selected' if mode == run.llama_guard_mode else '' }}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="llamaTimeout">Llama Guard timeout (seconds)</label>
+        <input id="llamaTimeout" class="form-control" name="llama_guard_timeout_seconds" type="number" min="30" max="3600" step="30" value="{{ run.llama_guard_timeout_seconds }}">
+      </div>
+    </div>
+
+    <h2 class="h6">Pricing</h2>
+    <div class="row g-3">
+      <div class="col-md-3">
+        <label class="form-label" for="currency">Currency</label>
+        <select id="currency" class="form-select" name="billing_currency">
+          <option value="USD" {{ 'selected' if run.billing_currency == 'USD' else '' }}>USD</option>
+          <option value="EUR" {{ 'selected' if run.billing_currency == 'EUR' else '' }}>EUR</option>
+        </select>
+      </div>
+      {% for field, label in [('target_input_price_per_million', 'Target input / 1M'), ('target_output_price_per_million', 'Target output / 1M'), ('judge_input_price_per_million', 'Judge input / 1M'), ('judge_output_price_per_million', 'Judge output / 1M')] %}
+      <div class="col-md-3">
+        <label class="form-label" for="{{ field }}">{{ label }}</label>
+        <input id="{{ field }}" class="form-control" name="{{ field }}" type="number" min="0" step="0.000001" value="{{ run|attr(field) }}">
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="card-footer d-flex justify-content-between">
+    <a class="btn btn-outline-light" href="{{ url_for('run_detail', run_id=run.id) }}">Cancel</a>
+    <button class="btn btn-primary">Save settings &amp; start new run</button>
+  </div>
+</form>
+{% endblock %}
