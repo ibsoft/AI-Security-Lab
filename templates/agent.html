@@ -13,7 +13,7 @@
         <label class="form-label" for="provider">Target provider</label>
         <select id="provider" class="form-select mb-3">
           {% for provider in providers %}
-          <option value="{{ provider.id }}" data-model-optional="{{ 'true' if provider.adapter == 'custom' or (provider.preset == 'custom' and provider.adapter == 'openai_compatible') else 'false' }}">{{ provider.name }}</option>
+          <option value="{{ provider.id }}" data-model-optional="{{ 'true' if provider.adapter == 'custom' or provider.preset == 'custom' else 'false' }}">{{ provider.name }}</option>
           {% endfor %}
         </select>
         <label id="targetModelLabel" class="form-label" for="model">Target model</label>
