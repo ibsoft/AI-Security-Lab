@@ -332,6 +332,44 @@ Security testing and runtime protection therefore cannot be treated as optional 
 
 ---
 
+## Sample benchmark report
+
+Explore the PDF report layout with **synthetic demonstration data**. These results
+illustrate the reporting features; they are not measurements of any real model.
+
+[Download the full sample PDF](docs/reports/sample-benchmark.pdf)
+
+The report includes outcome and score charts, benchmark settings, every stored
+record's pass/fail/error status, and full prompts, responses, and evaluator details.
+This sample contains six records: three passed, two failed, and one provider error.
+
+### Overview
+
+![Sample PDF overview with score summary and outcome chart](docs/reports/sample-overview.png)
+
+### Category scores
+
+![Sample PDF category score chart and results table](docs/reports/sample-category-scores.png)
+
+To generate your own report, open a benchmark run and export it as PDF.
+
+<details>
+<summary>Regenerate the sample assets</summary>
+
+From the repository root, with project dependencies installed:
+
+```bash
+.venv/bin/python docs/reports/generate_sample.py
+pdftoppm -f 1 -singlefile -scale-to 1400 -png docs/reports/sample-benchmark.pdf docs/reports/sample-overview
+pdftoppm -f 3 -singlefile -scale-to 1400 -png docs/reports/sample-benchmark.pdf docs/reports/sample-category-scores
+```
+
+The PNG preview commands require Poppler's `pdftoppm` utility.
+
+</details>
+
+---
+
 # 🚀 Quick Installation
 
 AI Security Lab is a **Python / Flask application**.
