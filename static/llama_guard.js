@@ -48,6 +48,8 @@ document.getElementById('gw')?.addEventListener('click', async (event) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: modelSelect.value,
+        device: document.getElementById("lgDevice").value,
+        threshold: document.getElementById("lgThreshold").value || null,
         timeout_seconds: Number(document.getElementById('gtimeout').value || 600),
       }),
     }));
@@ -94,6 +96,7 @@ function renderClassificationResult(result) {
     const verdict = result[stage];
     if (!verdict) continue;
     const details = [];
+    if (verdict.malicious_score != null) details.push(`unsafe probability: ${(verdict.malicious_score * 100).toFixed(2)}% · threshold: ${verdict.threshold}`);
     if (verdict.label === 'unsafe') details.push('safe: false');
     if (verdict.categories?.length) details.push(`categories: ${verdict.categories.join(', ')}`);
     const line = document.createElement('div');
@@ -120,6 +123,8 @@ document.getElementById('lgTestBtn')?.addEventListener('click', async (event) =>
         mode,
         text: document.getElementById('lgTestInput').value,
         response: document.getElementById('lgTestOutput').value,
+        device: document.getElementById("lgDevice").value,
+        threshold: document.getElementById("lgThreshold").value || null,
         timeout_seconds: Number(document.getElementById('gtimeout').value || 600),
       }),
     }));

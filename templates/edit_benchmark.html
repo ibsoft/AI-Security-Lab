@@ -159,6 +159,20 @@
           {% endfor %}
         </select>
       </div>
+      <div class="col-md-6">
+        <label class="form-label" for="lgDevice">Llama Guard device</label>
+        <select id="lgDevice" name="llama_guard_device" class="form-select">
+          {% for device, label in [('auto', 'Auto'), ('cpu', 'CPU'), ('gpu', 'GPU (CUDA / available backend)')] %}
+          <option value="{{ device }}" {{ 'selected' if device == run.llama_guard_device else '' }}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        <div class="form-text">Runs on the Ollama server. GPU requests full offload; availability and memory determine placement.</div>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label" for="lgThreshold">Malicious threshold</label>
+        <input id="lgThreshold" name="llama_guard_threshold" class="form-control" type="number" min="0" max="1" step="0.01" value="{{ run.llama_guard_threshold if run.llama_guard_threshold is not none else '' }}" placeholder="Model verdict (default)">
+        <div class="form-text">Optional unsafe probability cutoff. Requires Ollama logprobs support. Leave blank for the model verdict.</div>
+      </div>
       <div class="col-md-4">
         <label class="form-label" for="llamaTimeout">Llama Guard timeout (seconds)</label>
         <input id="llamaTimeout" class="form-control" name="llama_guard_timeout_seconds" type="number" min="30" max="3600" step="30" value="{{ run.llama_guard_timeout_seconds }}">

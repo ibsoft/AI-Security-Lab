@@ -15,6 +15,20 @@ body {
     var(--bg);
 }
 
+.page-loading {
+  position: fixed;
+  inset: 0;
+  z-index: 2050;
+  display: grid;
+  place-items: center;
+  background: rgba(7, 17, 31, .78);
+  backdrop-filter: blur(3px);
+}
+
+.page-loading[hidden] {
+  display: none;
+}
+
 .glass {
   background: rgba(7, 17, 31, .88);
   backdrop-filter: blur(14px);
@@ -79,6 +93,13 @@ body {
   height: calc(100vh - 255px);
   min-height: 500px;
   overflow: auto;
+}
+
+@media (min-width: 1200px) {
+  .agent-conversation-card .agent-chat {
+    height: 0;
+    flex: 1 1 auto;
+  }
 }
 
 .bubble {
